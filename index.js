@@ -3,8 +3,7 @@ const app = express()
 const bodyParser = require('body-parser')
 const morgan = require('morgan')
 const cors = require('cors')
-const mongoose = require('mongoose')
-require('dotenv').config()
+const Person = require('./models/person')
 
 app.use(cors())
 app.use(bodyParser.json())
@@ -15,30 +14,12 @@ morgan.token('body', function (req, res) {
 })
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'))
 
-const personSchema = new mongoose.Schema({
-    name: String,
-    number: String
-})
-console.log('setting schema...')
-personSchema.set('toJSON', {
-    transform: (document, returnedObject) => {
-        returnedObject.id = returnedObject._id.toString()
-        delete returnedObject._id
-        delete returnedObject.__v
-    }
-})
-
-const Person = mongoose.model('Person', personSchema)
-
 app.get('/api/persons', (req, res) => {
-    mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
     Person.find({}).then(result => {
         res.json(result)
-        mongoose.connection.close()
     }).catch(error => {
         console.log(error);
         res.status(404).end()
-        mongoose.connection.close()
     })
 })
 
