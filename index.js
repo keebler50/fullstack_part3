@@ -16,11 +16,12 @@ app.use(morgan(':method :url :status :res[content-length] - :response-time ms :b
 
 app.get('/api/persons', (req, res) => {
     Person.find({}).then(result => {
-        res.json(result)
-    }).catch(error => {
-        console.log(error);
-        res.status(404).end()
-    })
+        if (result) {
+            res.json(result)
+        } else {
+            res.status(404).end()
+        }
+    }).catch(error => next(error))
 })
 
 app.get('/api/persons/:id', (req, res) => {
@@ -59,8 +60,21 @@ app.post('/api/persons', (request, response) => {
 
     person.save().then(savedPerson => {
         response.json(savedPerson.toJSON())
-    })
+    }).catch(error => next(error))
 })
+
+const errorHandler = (error, request, response, next) => {
+    console.error('error.name: ' + error.name)
+    console.error('error.kind: ' + error.kind)
+
+    if (error.name === 'CastError' && error.kind === 'ObjectId') {
+        return response.status(400).send({ error: 'malformatted id' })
+    }
+
+    next(error)
+}
+
+app.use(errorHandler)
 
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
